@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Build output
+dist/
+build/
+out/
+.next/
+.tmp/
+coverage/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Generated / compiled files
+*.tsbuildinfo
+*.cache/
+*.min.js
+*.map
+
+# Public uploads or temp assets
+uploads/
+public/**/*.min.*
+public/**/*.map
+
+# Git stuff
+.git/
+.gitignore
+
+# Prettier ignore files themselves
+.prettierignore
