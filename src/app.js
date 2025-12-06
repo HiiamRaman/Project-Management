@@ -1,5 +1,6 @@
 import express from "express";
-import cors from 'cors'
+import cors from 'cors';
+import {notFoundHandler,globalErrorHandler} from './middleware/middleware.error.js'
 export const app = express();
 
 app.use(express.json({ limit: "16kb" }));
@@ -14,6 +15,29 @@ app.use(
     allowedHeaders: ["Authorization", "Content-Type"],
   })
 );
+//import the routes
+import { healthCheck } from "./controllers/healthcheck.controller.js";
+
+//
+app.use("/api/v1/healthcheck",healthCheck)
+
+
 app.get("/", (req, res) => {
   res.send("Welcome to basecamp!!");
 });
+
+
+
+
+//Global Error handler and 404 handler
+
+
+// 404 handler
+app.use(notFoundHandler);
+
+// Global error handler (must be last)
+app.use(globalErrorHandler);
+
+
+
+
