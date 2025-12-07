@@ -16,11 +16,11 @@ app.use(
   })
 );
 //import the routes
-import { healthCheck } from "./controllers/healthcheck.controller.js";
-
+import healthCheckrouter  from './routes/healthcheck.routes.js'
+import registerUserrouter from './routes/auth.routes.js'
 //
-app.use("/api/v1/healthcheck",healthCheck)
-
+app.use("/api/v1/healthcheck",healthCheckrouter)
+app.use("api/v1/authrouter",registerUserrouter)
 
 app.get("/", (req, res) => {
   res.send("Welcome to basecamp!!");
