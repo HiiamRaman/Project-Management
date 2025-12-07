@@ -17,8 +17,8 @@ const mailGenerator = new Mailgen({
   theme: "default",
   product: {
     // Appears in header & footer of e-mails
-    name: "Basecamp Clone",
-    link: "https://yourapp.com",
+    name: "Project Management",
+    link: "https://projectmanagement.com",
     // Optional product logo
     // logo of ypur product
   },
