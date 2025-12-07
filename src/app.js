@@ -15,7 +15,7 @@ app.use(
     allowedHeaders: ["Authorization", "Content-Type"],
   })
 );
-//import the routes
+//import the routes  (user export default for routing)
 import healthCheckrouter  from './routes/healthcheck.routes.js'
 import registerUserrouter from './routes/auth.routes.js'
 //
