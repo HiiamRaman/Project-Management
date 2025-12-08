@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+import bcrypt from 'bcrypt';
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 const userSchema = new mongoose.Schema(
@@ -22,13 +22,18 @@ const userSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
-    email: {
-      type: String,
-      required: [true, "email is required!!!"],
-      lowercase: true,
-      unique: true,
-      trim: true,
-    },
+   email: {
+  type: String,
+  required: [true, "Email is required!"],
+  unique: true,
+  lowercase: true,
+  trim: true,
+  match: [
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    "Please fill a valid email address",
+  ],
+},
+
     fullname: {
       type: String,
       required: [true, "fullname is required!!!"],
@@ -59,11 +64,28 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
 
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
+
+// the below code is for mongoose version less than 8
+// userSchema.pre("save", async function (next) {
+//   if (!this.isModified("password")) return next();
+
+//   this.password = await bcrypt.hash(this.password, 10);
+//   next();
+// });
+
+
+
+//this code is for mongoose version 9, since it says not to use nex(),because asyn function will handle it
+
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
+  try {
+    this.password = await bcrypt.hash(this.password, 10);
+  } catch (error) {
+    console.error("[ERROR] Password hashing failed:", error);
+    throw error; // throw error so Mongoose catches it
+  }
 });
 
 userSchema.methods.isPasswordCorrect = async function (password) {
@@ -81,7 +103,7 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 userSchema.methods.generateRefreshToken = function () {
-  jwt.sign(
+ return  jwt.sign(
     {
       _id: this._id,
     },

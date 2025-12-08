@@ -1,10 +1,21 @@
 import Mailgen from "mailgen";
 import { ApiError } from "./apiError.js";
 import nodemailer from "nodemailer";
+
+import dotenv from 'dotenv'
+dotenv.config()
 //Create a transporter Every email you send goes through a transporter—an object that knows how to deliver messages to your chosen email service.
 
+console.log("--------- SMTP DEBUG ---------");
+console.log("SMTP_HOST:", process.env.SMTP_HOST);
+console.log("SMTP_PORT:", process.env.SMTP_PORT);
+console.log("SMTP_USER:", process.env.SMTP_USER);
+console.log("SMTP_PASS:", process.env.SMTP_PASS);
+console.log("--------------------------------");
+
+
 const transporter = nodemailer.createTransport({
-  host: "smtp.example.com",
+  host: "sandbox.smtp.mailtrap.io",
   port: 587,
   auth: {
     user: process.env.MAIL_SMTP_USER,
@@ -25,7 +36,10 @@ const mailGenerator = new Mailgen({
 });
 
 //send Email
+
 export const sendEmail = async function (options) {
+
+  console.log("options:",options)
   try {
     const emailBody = mailGenerator.generate(options.mailgenContent);
     const emailText = mailGenerator.generatePlaintext(options.mailgenContent);
@@ -47,9 +61,9 @@ export const emailVerificationMailgenContent = (username, verificationUrl) => {
   return {
     body: {
       name: username,
-      intro: "Welcome to Mailgen! We're very excited to have you on board.",
+      intro: "Welcome to projectManagement app! We're very excited to have you on board.",
       action: {
-        instructions: "To get started with Mailgen, please click here:",
+        instructions: "To get started with projectManagement, please click here:",
         button: {
           color: "#22BC66", // Optional action button color
           text: "Confirm your account",

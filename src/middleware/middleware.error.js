@@ -17,3 +17,11 @@ export const globalErrorHandler = (err, req, res, next) => {
 export const notFoundHandler = (req, res, next) => {
   res.status(404).json(new ApiResponse(404, null, "Route not found"));
 };
+
+
+
+
+
+
+
+

@@ -46,7 +46,8 @@ import { generateAccessAndRefreshToken } from "../service/generateTokens.service
  *     - Backend validates token → sets isEmailVerified = true
  * -------------------------------------------------------
  */
-export const registerUser = asyncHandler(async (req, res) => {
+export const registerUser = async (req, res) => {
+    console.log("register process begin:")
   const { email, password, username, role, fullname } = req.body;
 
   //  Validate required fields
@@ -74,8 +75,10 @@ export const registerUser = asyncHandler(async (req, res) => {
   //generating tokens here are not necessary because we dont send them to frontend while register,
   //Return tokens immediately after registration This is common if you want the user to be logged in immediately after signup.
   //generate refresh token and access token
-  const { accessToken, refreshToken } = user.generateAccessAndRefreshToken(
-    user._id
+  
+  
+  const { accessToken, refreshToken } = generateAccessAndRefreshToken(
+   user._id
   );
 
   //  Generate temporary email verification token
@@ -118,4 +121,26 @@ export const registerUser = asyncHandler(async (req, res) => {
         "User registered successfully!! and verification email has sent to your email "
       )
     );
-});
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
