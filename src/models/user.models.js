@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bcrypt from 'bcrypt';
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 const userSchema = new mongoose.Schema(
@@ -22,17 +22,11 @@ const userSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
-   email: {
-  type: String,
-  required: [true, "Email is required!"],
-  unique: true,
-  lowercase: true,
-  trim: true,
-  match: [
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    "Please fill a valid email address",
-  ],
-},
+    email: {
+      type: String,
+      required: [true, "Email is required!"],
+      unique: true,
+    },
 
     fullname: {
       type: String,
@@ -65,7 +59,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-
 // the below code is for mongoose version less than 8
 // userSchema.pre("save", async function (next) {
 //   if (!this.isModified("password")) return next();
@@ -73,8 +66,6 @@ const userSchema = new mongoose.Schema(
 //   this.password = await bcrypt.hash(this.password, 10);
 //   next();
 // });
-
-
 
 //this code is for mongoose version 9, since it says not to use nex(),because asyn function will handle it
 
@@ -103,7 +94,7 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 userSchema.methods.generateRefreshToken = function () {
- return  jwt.sign(
+  return jwt.sign(
     {
       _id: this._id,
     },

@@ -28,6 +28,7 @@ import registerUserrouter from "./routes/auth.routes.js";
 app.use("/api/v1/healthcheck", healthCheckrouter);
 app.use("/api/v1/auth", registerUserrouter);
 
+
 app.get("/", (req, res) => {
   res.send("Welcome to basecamp!!");
 });
