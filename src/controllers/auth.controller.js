@@ -47,7 +47,7 @@ import { generateAccessAndRefreshToken } from "../service/generateTokens.service
  * -------------------------------------------------------
  */
 export const registerUser = async (req, res) => {
-    console.log("register process begin:")
+  console.log("register process begin:");
   const { email, password, username, role, fullname } = req.body;
 
   //  Validate required fields
@@ -75,11 +75,8 @@ export const registerUser = async (req, res) => {
   //generating tokens here are not necessary because we dont send them to frontend while register,
   //Return tokens immediately after registration This is common if you want the user to be logged in immediately after signup.
   //generate refresh token and access token
-  
-  
-  const { accessToken, refreshToken } = generateAccessAndRefreshToken(
-   user._id
-  );
+
+  const { accessToken, refreshToken } = generateAccessAndRefreshToken(user._id);
 
   //  Generate temporary email verification token
 
@@ -123,24 +120,77 @@ export const registerUser = async (req, res) => {
     );
 };
 
+//login controllers
 
+export const login = asyncHandler(async (req, res) => {
+   /*
+       MENTAL FLOW:
+      1. Extract email & password.
+      2. Validate both.
+      3. Check if user exists.
+      4. Compare password using user.isPasswordCorrect().
+      5. Generate access & refresh tokens.
+      6. Store refresh token in database.
+      7. Create secure cookie options.
+      8. Set access & refresh tokens as cookies.
+      9. Send safe user info + message.
+  */
+  const { email, password } = req.body;
+  if (!email || !password) {
+    throw new ApiError(400, "email and password are reqired !!");
+  }
 
+  // Step 2: find the user by email
 
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new ApiError(400, "invalid email!!");
+  }
 
+  // Compare password using user.isPasswordCorrect().
 
+  const validpassword = await user.isPasswordCorrect(password);
 
+  if (!validpassword) {
+    throw new ApiError(400, "Invalid password");
+  }
 
+  //Generate access & refresh tokens.
 
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
+  //Save refresh token in DB
 
+  user.refreshToken = refreshToken;
+  
 
+  await user.save({ validateBeforeSave: false });
 
+  //  Cookie options
 
+  const Options = {
+    httpOnly: true,
+    secure: true,
+  };
 
+  // 8 — Set cookies
 
+  res.cookie("accessToken", accessToken, Options);
+  res.cookie("refreshToken", refreshToken, Options);
+  const safeUser = await User.findById(user._id).select(
+    "-password -refreshToken -emailVerificationToken -emailVerificationExpiry"
+  );
 
+  /* this can be done in another way also like
 
+safeUser = {
+_id : user._id,
+name:user.name,
+email:user.email
 
+}  */
 
-
-
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { user:safeUser,refreshToken,accessToken }, "user loggedin successfully!!"));
+});
