@@ -3,14 +3,14 @@ import { ApiError } from "./apiError.js";
 import nodemailer from "nodemailer";
 
 import dotenv from 'dotenv'
-dotenv.config()
+dotenv.config({path:'./.env'})
 //Create a transporter Every email you send goes through a transporter—an object that knows how to deliver messages to your chosen email service.
 
 console.log("--------- SMTP DEBUG ---------");
-console.log("SMTP_HOST:", process.env.SMTP_HOST);
-console.log("SMTP_PORT:", process.env.SMTP_PORT);
-console.log("SMTP_USER:", process.env.SMTP_USER);
-console.log("SMTP_PASS:", process.env.SMTP_PASS);
+console.log("SMTP_HOST:", process.env.MAIL_SMTP_HOST);
+console.log("SMTP_PORT:", process.env.MAIL_SMTP_PORT);
+console.log("SMTP_USER:", process.env.MAIL_SMTP_USER);
+console.log("SMTP_PASS:", process.env.MAIL_SMTP_PASS);
 console.log("--------------------------------");
 
 
