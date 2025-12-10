@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asynHandler.js";
 import { sendEmail, emailVerificationMailgenContent } from "../utils/mail.js";
 import { generateAccessAndRefreshToken } from "../service/generateTokens.service.js";
+import mongoose from "mongoose";
 
 //Register User
 /**
@@ -203,9 +204,10 @@ email:user.email
 });
 
 export const logoutUser = asyncHandler(async (req, res) => {
+  const { accessToken, refreshToken } = req.cookies;
   const user = await User.findByIdAndUpdate(
     req.user._id,
-    { $unset: refreshToken },
+    { $unset: { refreshToken } },
     { new: true }
   );
   if (!user) {
@@ -222,4 +224,34 @@ export const logoutUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, null, "Userlogged out successfullty!!"));
+});
+
+export const getCurrentUser = asyncHandler(async (req, res) => {
+  /*
+      MENTAL FLOW:
+      1. Extract userId from req.user (set by verifyJWT middleware)
+      2. Validate userId
+      3. Fetch user from DB without sensitive fields
+      4. If not found, throw error
+      5. Return structured response
+  */
+  //1. Extract userId from req.user (set by verifyJWT middleware
+
+  const  userId  = req.user._id;
+  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    throw new ApiError(400, "invalid userId");
+  }
+
+  //Fetch user from DB
+  const user = await User.findById(userId).select(
+    "-password -refreshToken -emailVerificationToken -emailVerificationExpiry -__v"
+  );
+
+  if (!user) {
+    throw new ApiError(404, "user not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "user fetched successfully!!"));
 });

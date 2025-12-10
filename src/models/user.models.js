@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import { type } from "os";
 const userSchema = new mongoose.Schema(
   {
     avatar: {
@@ -36,6 +37,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "password is required!!"],
     },
+    role: {
+      type: String,
+      enum: ["admin", "adminstrator", "member"], // allowed roles
+      default: "member",
+      
+    },
+
     isEmailVerified: {
       type: Boolean,
       default: false,

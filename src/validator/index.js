@@ -20,13 +20,19 @@ export const userRegisterValidator = () => {
         .withMessage("username must be in lower case")
         .isLength()
         .withMessage("username must have at least 3 characters"),
-        body("passwrod")
+        body("password")
         .trim()
         .notEmpty()
         .withMessage("password is required!!"),
         body("fullname")
         .optional()
-        .trim()
+        .trim(),
+        body("role")
+        .optional()
+        .default("member")
+        .isIn(["admin","member","adminstrator"])
+        .withMessage("invalid role")
+      
 ]
 
 };
