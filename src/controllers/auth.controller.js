@@ -352,7 +352,8 @@ export const resendEmailverification = asyncHandler(async (req, res) => {
 
   //  Generate temporary email verification token
 
-  const { unhashedToken, hashedToken,tokenExpiry } = user.generateTemporaryToken();
+  const { unhashedToken, hashedToken, tokenExpiry } =
+    user.generateTemporaryToken();
   user.emailVerificationToken = hashedToken;
   user.emailVerificationExpiry = tokenExpiry;
   //  Save token to DB
@@ -383,5 +384,84 @@ export const resendEmailverification = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, safeUser, "Verification email sent successfully!"));
+    .json(
+      new ApiResponse(200, safeUser, "Verification email sent successfully!")
+    );
+});
+
+export const refreshAccessToken = asyncHandler(async (req, res) => {
+  /*
+      MENTAL FLOW:
+      1. Extract refresh token from cookies
+      2. Validate token exists
+      3. Verify token signature and decode payload //in simply it says to decode and compare the extracted refresh token with 
+      4. Fetch user from DB using decoded id
+      5. Ensure stored refresh token matches the token received
+      6. Generate new access token
+      7. Return access token in response
+  */
+
+  //  Extract refresh token from cookies
+
+  const incomingrefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incomingrefreshToken) {
+    throw new ApiError(400, "Token not found ");
+  }
+
+  // Verify token signature
+  let decodedToken;
+try {
+  
+     decodedToken = jwt.verify(
+      incomingrefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+    
+} catch (error) {
+  throw new ApiError(400,"invalid Token or Expired token");
+  
+  
+}
+
+  
+
+  // Fetch user from DB
+  const user = await User.findById(decodedToken._id);
+
+  if (!user) {
+    throw new ApiError(404, "user not found!!");
+  }
+
+  // Ensure stored refresh token matches the token received
+
+  if (user.refreshToken !== incomingrefreshToken) {
+    throw new ApiError(400, "Refresh token does not match");
+  }
+
+  //  Generate new access token
+
+  const { accessToken, refreshToken } = generateAccessAndRefreshToken(user._id);
+
+
+  user.refreshToken = refreshToken;
+
+  await user.save({ validateBeforeSave: false });
+ const options = {
+  httpOnly:true,
+  secure:true
+ }
+ res.cookie("refreshToken",refreshToken,options)
+ res.cookie("accessToken",accessToken,options)
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { refreshToken, accessToken },
+        "Refreshtoken refreshed Access token successfully!!"
+      )
+    );
 });
