@@ -123,7 +123,7 @@ export const registerUser = async (req, res) => {
 //login controllers
 
 export const login = asyncHandler(async (req, res) => {
-   /*
+  /*
        MENTAL FLOW:
       1. Extract email & password.
       2. Validate both.
@@ -157,12 +157,13 @@ export const login = asyncHandler(async (req, res) => {
 
   //Generate access & refresh tokens.
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
 
   //Save refresh token in DB
 
   user.refreshToken = refreshToken;
-  
 
   await user.save({ validateBeforeSave: false });
 
@@ -192,5 +193,33 @@ email:user.email
 
   return res
     .status(200)
-    .json(new ApiResponse(200, { user:safeUser,refreshToken,accessToken }, "user loggedin successfully!!"));
+    .json(
+      new ApiResponse(
+        200,
+        { user: safeUser, refreshToken, accessToken },
+        "user loggedin successfully!!"
+      )
+    );
+});
+
+export const logoutUser = asyncHandler(async (req, res) => {
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $unset: refreshToken },
+    { new: true }
+  );
+  if (!user) {
+    throw new ApiError(404, "user not found");
+  }
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  res.clearCookie("accessToken", accessToken, options);
+  res.clearCookie("refreshToken", refreshToken, options);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "Userlogged out successfullty!!"));
 });
