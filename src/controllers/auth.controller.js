@@ -79,7 +79,7 @@ export const registerUser = async (req, res) => {
 
   const { accessToken, refreshToken } = generateAccessAndRefreshToken(user._id);
 
-  //  Generate temporary email verification token
+  //  Generate temporary email verification token that we defined in user.model
 
   const { unhashedToken, hashedToken, tokenExpiry } =
     user.generateTemporaryToken();
@@ -237,7 +237,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
   */
   //1. Extract userId from req.user (set by verifyJWT middleware
 
-  const  userId  = req.user._id;
+  const userId = req.user._id;
   if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
     throw new ApiError(400, "invalid userId");
   }
@@ -254,4 +254,134 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, user, "user fetched successfully!!"));
+});
+
+export const verifyEmail = asyncHandler(async (req, res) => {
+  /*
+    MENTAL FLOW:
+    1. Extract token from params
+    2. Validate token
+    3. Find user with token and unexpired
+    4. If not found, throw error
+    5. Set isVerified true, remove token fields
+    6. Save user
+    7. Return success response
+*/
+  //Extract
+  const { verificationToken } = req.params;
+
+  //2. Validate token
+  if (!verificationToken || typeof verificationToken !== "string") {
+    throw new ApiError(400, "Invalid or missing verificationToken");
+  }
+
+  // 2.1 we hashed the verification  token while storing in db so lets hash the verification token to match with db token
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(verificationToken)
+    .digest("hex");
+
+  //Find user with matching token and valid expiry
+
+  const user = await User.findOne({
+    emailVerificationToken: hashedToken,
+    emailVerificationExpiry: { $gt: Date.now() }, // $gt: Date.now() ensures we only find tokens that are still valid (expiry time is in the future)
+  });
+
+  if (!user) {
+    throw new ApiError(404, "Invalid or expired email verification token");
+  }
+
+  //lets mark email isverified true
+
+  user.isEmailVerified = true;
+  user.emailVerificationToken = undefined;
+  user.emailVerificationExpiry = undefined;
+  await user.save();
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { isEmailVerified: true },
+        "Email verified successfully!!!"
+      )
+    );
+});
+
+export const resendEmailverification = asyncHandler(async (req, res) => {
+  /*
+      MENTAL FLOW:
+      1. Extract email from request body
+      2. Validate that email is provided
+      3. Find the user by email
+      4. If user does not exist → throw error
+      5. If user is already verified → throw error
+
+
+      after this we did same process while registering user
+      6. Generate a new email verification token (random bytes)
+      7. Hash the token with SHA256 before storing in DB
+      8. Set token expiry time (e.g., 1 hour from now)
+      9. Save the user document
+      10. Send verification email with plain token in URL
+      11. Return a success response with minimal user info
+  */
+
+  const { email } = req.body;
+
+  if (!email || typeof email !== "string") {
+    throw new ApiError(400, "Invalid Email!!");
+  }
+
+  // Find the user by email
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new ApiError(400, "User not found!!!");
+  }
+  // If user is already verified → throw error
+
+  if (user.isEmailVerified) {
+    throw new ApiError(400, "user email is already verified!!");
+  }
+
+  // after this we did same process while registering user
+
+  //  Generate temporary email verification token
+
+  const { unhashedToken, hashedToken,tokenExpiry } = user.generateTemporaryToken();
+  user.emailVerificationToken = hashedToken;
+  user.emailVerificationExpiry = tokenExpiry;
+  //  Save token to DB
+  await user.save({ validateBeforeSave: false });
+
+  // -------------------------------------------------------
+  //  Send verification email
+  const verificationLink = `${req.protocol}://${req.get("host")}/api/v1/user/verify-email/${unhashedToken}`;
+  await sendEmail({
+    email: user?.email,
+    subject: "please Verify Your email",
+    mailgenContent: emailVerificationMailgenContent(
+      user.username,
+      verificationLink
+    ),
+  });
+
+  // -------------------------------------------------------
+  //  Return safe user info
+  // Exclude sensitive fields such as password, refreshToken, verification token & expiry
+
+  const safeUser = {
+    _id: user._id,
+    email: user.email,
+    username: user.username, // optional, if you want
+    isEmailVerified: user.isEmailVerified, // optional
+  };
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, safeUser, "Verification email sent successfully!"));
 });
