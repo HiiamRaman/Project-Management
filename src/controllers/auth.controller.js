@@ -6,6 +6,7 @@ import { sendEmail, emailVerificationMailgenContent } from "../utils/mail.js";
 import { generateAccessAndRefreshToken } from "../service/generateTokens.service.js";
 import mongoose from "mongoose";
 
+
 //Register User
 /**
  *  Mental Workflow:
@@ -459,7 +460,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     );
 });
 
-export const forgotpassword = asyncHandler(async (req, res) => {
+export const forgotPasswordReq = asyncHandler(async (req, res) => {
   /*
       MENTAL FLOW:
       1. Extract email from request
@@ -516,7 +517,7 @@ export const forgotpassword = asyncHandler(async (req, res) => {
       )
     );
 });
-export const resetPassword = asyncHandler(async (req, res) => {
+export const ResetPasswordReq = asyncHandler(async (req, res) => {
   /*
       MENTAL FLOW:
       1. Extract reset token from URL params
@@ -537,7 +538,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
 
   // Extract new password from request body
 
-  const { password ,confirmPassword } = req.body;
+  const { password, confirmPassword } = req.body;
 
   if (!resetToken) {
     throw new ApiError(400, "Reset token is missing");
@@ -547,10 +548,8 @@ export const resetPassword = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid Password!!!");
   }
 
-  if(!confirmPassword || password!==confirmPassword){
-    throw new ApiError(400,"Password doesnot match!!!");
-    
-
+  if (!confirmPassword || password !== confirmPassword) {
+    throw new ApiError(400, "Password doesnot match!!!");
   }
 
   //  Hash the incoming token (because DB stores hashed token)
@@ -589,4 +588,48 @@ export const resetPassword = asyncHandler(async (req, res) => {
         "Password reset successful. You can now log in with your new password."
       )
     );
+});
+
+export const ChangeCurrentpassword = asyncHandler(async (req, res) => {
+  /*
+      MENTAL FLOW:
+      1. Extract userId from req.user (set by verifyJWT middleware)
+      2. Extract currentPassword, newPassword, confirmPassword from body
+      3. Validate inputs
+      4. Fetch user from DB
+      5. Verify currentPassword matches stored password
+     
+      7. Validate newPassword === confirmPassword
+      8. Update password
+      9. Save user with model validations
+      10. Respond with success message
+  */
+
+  const { userId } = req.user._id;
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    throw new ApiError(400, "All Fields are required!!!");
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new ApiError(404, "user not found !!!");
+  }
+
+  const isMatch = await user.isPasswordCorrect(currentPassword);
+
+  if (!isMatch) {
+    throw new ApiError(400, "Invalid currentPassword!!!");
+  }
+
+  if (newPassword !== confirmPassword) {
+    throw new ApiError(400, "passwords donot match!!");
+  }
+
+  user.password = password;
+  await user.save();
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "password changed Successfully!! "));
 });
