@@ -538,17 +538,17 @@ export const ResetPasswordReq = asyncHandler(async (req, res) => {
 
   // Extract new password from request body
 
-  const { password, confirmPassword } = req.body;
+  const { newpassword, confirmPassword } = req.body;
 
   if (!resetToken) {
     throw new ApiError(400, "Reset token is missing");
   }
 
-  if (!password || typeof password !== "string") {
-    throw new ApiError(400, "Invalid Password!!!");
+  if (!newpassword || typeof newpassword !== "string") {
+    throw new ApiError(400, "Invalid newpassword!!!");
   }
 
-  if (!confirmPassword || password !== confirmPassword) {
+  if (!confirmPassword || newpassword !== confirmPassword) {
     throw new ApiError(400, "Password doesnot match!!!");
   }
 
@@ -570,7 +570,7 @@ export const ResetPasswordReq = asyncHandler(async (req, res) => {
   }
 
   // Update user password
-  user.password = password;
+  user.password = newpassword;
 
   // Clear reset token and expiry (single-use token)
   user.forgotPasswordToken = undefined;
@@ -627,7 +627,7 @@ export const ChangeCurrentpassword = asyncHandler(async (req, res) => {
     throw new ApiError(400, "passwords donot match!!");
   }
 
-  user.password = password;
+  user.password = newPassword;
   await user.save();
   res
     .status(200)
