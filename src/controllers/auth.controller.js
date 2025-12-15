@@ -474,8 +474,8 @@ export const forgotpassword = asyncHandler(async (req, res) => {
   */
   // Extract email from request
 
- const { email } = req.body;
-  if (!email) {
+  const { email } = req.body;
+  if (!email || typeof email !== "string") {
     throw new ApiError(400, "email not found");
   }
 
@@ -488,13 +488,14 @@ export const forgotpassword = asyncHandler(async (req, res) => {
 
   // Generate a secure password reset token (basically measn the temporary token)
 
-  const { unhashedToken, hashedToken, tokenExpiry } = generateTemporaryToken();
+  const { unhashedToken, hashedToken, tokenExpiry } =
+    user.generateTemporaryToken();
 
   user.forgotPasswordToken = hashedToken;
   user.forgotPasswordExpiry = tokenExpiry;
   await user.save({ validateBeforeSave: false });
 
-  // Generate reset URL to send to email or //  Send verification email like we did on register user
+  // Generate reset URL to send to email or //  Send passwordResetUrl email like we did on register user
   const passwordResetUrl = `${req.protocol}://${req.get("host")}/api/v1/users/reset-password/${unhashedToken}`;
   await sendEmail({
     email: user?.email,
@@ -507,5 +508,85 @@ export const forgotpassword = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, {}, "Password reset email sent successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        {},
+        "If the email exists, a reset link has been sent"
+      )
+    );
+});
+export const resetPassword = asyncHandler(async (req, res) => {
+  /*
+      MENTAL FLOW:
+      1. Extract reset token from URL params
+      2. Extract new password from request body
+      3. Validate inputs
+      4. Hash the incoming token (because DB stores hashed token)
+      5. Find user with matching token and non-expired expiry
+      6. If user not found → token invalid or expired
+      7. Update user password
+      8. Clear reset token and expiry (single-use token)
+      9. Save user
+      10. Respond with success message
+  */
+
+  // Extract reset token from URL params
+
+  const { resetToken } = req.params;
+
+  // Extract new password from request body
+
+  const { password ,confirmPassword } = req.body;
+
+  if (!resetToken) {
+    throw new ApiError(400, "Reset token is missing");
+  }
+
+  if (!password || typeof password !== "string") {
+    throw new ApiError(400, "Invalid Password!!!");
+  }
+
+  if(!confirmPassword || password!==confirmPassword){
+    throw new ApiError(400,"Password doesnot match!!!");
+    
+
+  }
+
+  //  Hash the incoming token (because DB stores hashed token)
+
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  // Find user with matching token and non-expired expiry
+
+  const user = await User.findOne({
+    forgotPasswordToken: hashedToken,
+    forgotPasswordExpiry: { $gt: Date.now() },
+  });
+  if (!user) {
+    throw new ApiError(400, "Token is invalid or has expired");
+  }
+
+  // Update user password
+  user.password = password;
+
+  // Clear reset token and expiry (single-use token)
+  user.forgotPasswordToken = undefined;
+  user.forgotPasswordExpiry = undefined;
+  await user.save();
+
+  // Respond with success message
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        {},
+        "Password reset successful. You can now log in with your new password."
+      )
+    );
 });
