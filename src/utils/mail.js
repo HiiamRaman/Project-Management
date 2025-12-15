@@ -73,17 +73,17 @@ export const forgotPasswordMailgenContent = (username, passwordResetUrl) => {
   return {
     body: {
       name: username,
-      intro: "Welcome to Mailgen! We're very excited to have you on board.",
+      intro: "You requested a password reset for your account.",
       action: {
-        instructions: "To get started with Mailgen, please click here:",
+        instructions: "Click the button below to reset your password. This link is valid for only 15 minutes:",
         button: {
-          color: "#22BC66", // Optional action button color
-          text: "Confirm your account",
+          color: "#DC4D2F", // Optional action button color
+          text: "Reset Password",
           link: passwordResetUrl,
         },
       },
       outro:
-        "Need help, or have questions? Just reply to this email, we'd love to help.",
+        "If you did not request a password reset, you can safely ignore this email.",
     },
   };
 };

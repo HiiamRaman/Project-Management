@@ -412,20 +412,14 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
 
   // Verify token signature
   let decodedToken;
-try {
-  
-     decodedToken = jwt.verify(
+  try {
+    decodedToken = jwt.verify(
       incomingrefreshToken,
       process.env.REFRESH_TOKEN_SECRET
     );
-    
-} catch (error) {
-  throw new ApiError(400,"invalid Token or Expired token");
-  
-  
-}
-
-  
+  } catch (error) {
+    throw new ApiError(400, "invalid Token or Expired token");
+  }
 
   // Fetch user from DB
   const user = await User.findById(decodedToken._id);
@@ -444,16 +438,15 @@ try {
 
   const { accessToken, refreshToken } = generateAccessAndRefreshToken(user._id);
 
-
   user.refreshToken = refreshToken;
 
   await user.save({ validateBeforeSave: false });
- const options = {
-  httpOnly:true,
-  secure:true
- }
- res.cookie("refreshToken",refreshToken,options)
- res.cookie("accessToken",accessToken,options)
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+  res.cookie("refreshToken", refreshToken, options);
+  res.cookie("accessToken", accessToken, options);
 
   return res
     .status(200)
@@ -464,4 +457,55 @@ try {
         "Refreshtoken refreshed Access token successfully!!"
       )
     );
+});
+
+export const forgotpassword = asyncHandler(async (req, res) => {
+  /*
+      MENTAL FLOW:
+      1. Extract email from request
+      2. Validate email
+      3. Find user by email
+      4. Generate a secure password reset token
+      5. Hash token and store it in DB with expiry time
+      6. Save the user (without validation)
+      7. Generate reset URL to send to email
+      8. Email the reset link to the user
+      9. Respond with success message
+  */
+  // Extract email from request
+
+ const { email } = req.body;
+  if (!email) {
+    throw new ApiError(400, "email not found");
+  }
+
+  // Find user by email
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new ApiError(404, "user not found!!");
+  }
+
+  // Generate a secure password reset token (basically measn the temporary token)
+
+  const { unhashedToken, hashedToken, tokenExpiry } = generateTemporaryToken();
+
+  user.forgotPasswordToken = hashedToken;
+  user.forgotPasswordExpiry = tokenExpiry;
+  await user.save({ validateBeforeSave: false });
+
+  // Generate reset URL to send to email or //  Send verification email like we did on register user
+  const passwordResetUrl = `${req.protocol}://${req.get("host")}/api/v1/users/reset-password/${unhashedToken}`;
+  await sendEmail({
+    email: user?.email,
+    subject: "You requested a password reset for your account",
+    mailgenContent: forgotPasswordMailgenContent(
+      user.username || user.fullname,
+      passwordResetUrl
+    ),
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password reset email sent successfully"));
 });
