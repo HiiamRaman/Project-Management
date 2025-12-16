@@ -5,8 +5,8 @@ import { asyncHandler } from "../utils/asynHandler.js";
 import { sendEmail, emailVerificationMailgenContent } from "../utils/mail.js";
 import { generateAccessAndRefreshToken } from "../service/generateTokens.service.js";
 import mongoose from "mongoose";
-
-
+import  dotenv  from "dotenv";
+dotenv.config()
 //Register User
 /**
  *  Mental Workflow:
@@ -404,6 +404,9 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
 
   //  Extract refresh token from cookies
 
+  console.log("COOKIE TOKEN:", req.cookies?.refreshToken);
+console.log("BODY TOKEN:", req.body?.refreshToken);
+
   const incomingrefreshToken =
     req.cookies.refreshToken || req.body.refreshToken;
 
@@ -414,6 +417,11 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
   // Verify token signature
   let decodedToken;
   try {
+    console.log("REFRESH SECRET IN VERIFY:", process.env.REFRESH_TOKEN_SECRET);
+    console.log("Incoming refresh token:", incomingrefreshToken);
+console.log("All cookies:", req.cookies);
+console.log("Request body:", req.body);
+
     decodedToken = jwt.verify(
       incomingrefreshToken,
       process.env.REFRESH_TOKEN_SECRET
@@ -439,12 +447,18 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
 
   const { accessToken, refreshToken } = generateAccessAndRefreshToken(user._id);
 
+
+  console.log("Incoming refresh token:", incomingrefreshToken);
+console.log("User stored refresh token:", user.refreshToken);
+
+
   user.refreshToken = refreshToken;
 
   await user.save({ validateBeforeSave: false });
   const options = {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV==="production",
+     sameSite: "lax",
   };
   res.cookie("refreshToken", refreshToken, options);
   res.cookie("accessToken", accessToken, options);
@@ -605,7 +619,7 @@ export const ChangeCurrentpassword = asyncHandler(async (req, res) => {
       10. Respond with success message
   */
 
-  const { userId } = req.user._id;
+  const userId = req.user._id;
   const { currentPassword, newPassword, confirmPassword } = req.body;
   if (!currentPassword || !newPassword || !confirmPassword) {
     throw new ApiError(400, "All Fields are required!!!");
